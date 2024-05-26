@@ -11,7 +11,7 @@ public class Account {
 
     private Double balance;
 
-    public Account(){
+    public Account() {
     }
 
     public Account(Double balance) {
