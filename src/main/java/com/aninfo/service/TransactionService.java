@@ -3,11 +3,6 @@ package com.aninfo.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.aninfo.exceptions.DepositNegativeSumException;
-import com.aninfo.exceptions.InsufficientFundsException;
-import com.aninfo.exceptions.InvalidTransactionCBUException;
-import com.aninfo.exceptions.InvalidTransactionTypeException;
-import com.aninfo.model.Account;
 import com.aninfo.model.Transaction;
 import com.aninfo.repository.TransactionRepository;
 import java.util.Optional;
@@ -27,20 +22,12 @@ public class TransactionService {
 
     // createTransaction crea una nueva Transaction y la guarda en la base de datos,
     // devuelve latransacción creada
-    public Transaction createTransaction(Transaction transaction) {
-        Long cbu = transaction.getAccountCbu();
-        String tipo = transaction.getTipo();
-        Optional<Account> optionalAccount = accountService.findById(cbu);
-
-        Boolean tipoValido = tipo.equalsIgnoreCase("DEPOSIT") || tipo.equalsIgnoreCase("WITHDRAW");
-        Boolean cbuValido = optionalAccount.isPresent();
-
-        if (!tipoValido) {
-            throw new InvalidTransactionTypeException("Transaction Type Invalid: type must be DEPOSIT or WITHDRAW");
-        }
-        if (!cbuValido) {
-            throw new InvalidTransactionCBUException("Transaction CBU Invalid: that account does not exist");
-        }
+    public Transaction createTransaction(Long cbu, Double monto, String tipo) {
+        Transaction transaction = new Transaction();
+        transaction.setAccount(cbu);
+        transaction.setTipo(tipo);
+        transaction.setMonto(monto);
+        
         return transactionRespository.save(transaction);
     }
 
@@ -75,42 +62,14 @@ public class TransactionService {
             } else {
                 accountService.deposit(cbu, monto);
             }
+            transactionRespository.deleteById(id);
         }
-        transactionRespository.deleteById(id);
+        
     }
 
-    // getTransactionsByAccountCbu obtiene todas las transacciones de una misma
-    // cuenta
+    // getTransactionsByAccountCbu obtiene todas las transacciones de una misma cuenta
     public List<Transaction> getTransactionsByAccountCbu(Long accountCbu) {
         return transactionRespository.findByAccountCbu(accountCbu);
     }
 
-    public void processDeposit(Transaction transaction) {
-        Double monto = transaction.getMonto();
-        Long cbu = transaction.getAccountCbu();
-
-        // Lógica de negocio: No permitir depósitos de montos nulos o negativos
-        if (monto > 0) {
-            accountService.deposit(cbu, monto);
-        } else {
-            throw new DepositNegativeSumException("Invalid Deposit, value cannot be null or negative");
-        }
-    }
-
-    public void processWithdraw(Transaction transaction) {
-        Double monto = transaction.getMonto();
-        Long cbu = transaction.getAccountCbu();
-
-        // Lógica de negocio: No permitir extracciones mayores al saldo de la cuenta
-        Optional<Account> optionalAccount = accountService.findById(cbu);
-        if (optionalAccount.isPresent()) {
-            Account account = optionalAccount.get();
-            Double balance = account.getBalance();
-            if (monto < balance) {
-                accountService.withdraw(cbu, monto);
-            } else {
-                throw new InsufficientFundsException("Invalid Deposit, withdrawal amount may be added to the balance");
-            }
-        }
-    }
 }

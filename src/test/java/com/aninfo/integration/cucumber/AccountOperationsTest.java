@@ -25,7 +25,7 @@ public class AccountOperationsTest extends AccountIntegrationServiceTest {
     }
 
     @Given("^Account with a balance of (\\d+)$")
-    public void account_with_a_balance_of(int balance)  {
+    public void account_with_a_balance_of(int balance) {
         account = createAccount(Double.valueOf(balance));
     }
 

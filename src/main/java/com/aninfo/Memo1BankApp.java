@@ -85,21 +85,6 @@ public class Memo1BankApp {
 	@Autowired
 	private TransactionService transactionService;
 
-	@PostMapping("/transactions")
-	@ResponseStatus(HttpStatus.CREATED)
-	public Transaction createTransaction(@RequestBody Transaction transaction) {
-		// crea la transacción
-		Transaction createdTransaction = transactionService.createTransaction(transaction);
-
-		// verifica el tipo de transaccion
-		if ("DEPOSIT".equals(transaction.getTipo())) {
-			transactionService.processDeposit(transaction);
-		} else {
-			transactionService.processWithdraw(transaction);
-		}
-		return createdTransaction;
-	}
-
 	@GetMapping("/transactions")
 	public Collection<Transaction> getTransactions() {
 		return transactionService.getTransactions();
@@ -115,6 +100,11 @@ public class Memo1BankApp {
 	public ResponseEntity<List<Transaction>> getTransactionByAccountCbu(@PathVariable Long accountCbu) {
 		List<Transaction> transactions = transactionService.getTransactionsByAccountCbu(accountCbu);
 		return ResponseEntity.ok(transactions);
+	}
+
+	@DeleteMapping("/transaction/{id}")
+	public void deleteTransaction(@PathVariable Long id) {
+		transactionService.deleteById(id);
 	}
 
 	@Bean
