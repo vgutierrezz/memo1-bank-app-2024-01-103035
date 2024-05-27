@@ -2,6 +2,10 @@ package com.aninfo;
 
 import com.aninfo.model.Account;
 import com.aninfo.service.AccountService;
+import com.aninfo.service.TransactionService;
+
+import com.aninfo.model.Transaction;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Collection;
 import java.util.Optional;
 import springfox.documentation.builders.PathSelectors;
@@ -31,8 +36,10 @@ public class Memo1BankApp {
 		SpringApplication.run(Memo1BankApp.class, args);
 	}
 
+	// Metodo encargado de crear cuentas a nivel del controler
 	@PostMapping("/accounts")
-	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseStatus(HttpStatus.CREATED) // respuesta: 2xx request satifactorio - 4xx bad request por culpa del cliente -
+										// 5xx error del lado del servidor
 	public Account createAccount(@RequestBody Account account) {
 		return accountService.createAccount(account);
 	}
@@ -75,12 +82,37 @@ public class Memo1BankApp {
 		return accountService.deposit(cbu, sum);
 	}
 
+	@Autowired
+	private TransactionService transactionService;
+
+	@GetMapping("/transactions")
+	public Collection<Transaction> getTransactions() {
+		return transactionService.getTransactions();
+	}
+
+	@GetMapping("/transactions/{id}")
+	public ResponseEntity<Transaction> getTransaction(@PathVariable Long id) {
+		Optional<Transaction> transactionOptional = transactionService.findTransactionById(id);
+		return ResponseEntity.of(transactionOptional);
+	}
+
+	@GetMapping("/transaction/{accountCbu}")
+	public ResponseEntity<List<Transaction>> getTransactionByAccountCbu(@PathVariable Long accountCbu) {
+		List<Transaction> transactions = transactionService.getTransactionsByAccountCbu(accountCbu);
+		return ResponseEntity.ok(transactions);
+	}
+
+	@DeleteMapping("/transaction/{id}")
+	public void deleteTransaction(@PathVariable Long id) {
+		transactionService.deleteById(id);
+	}
+
 	@Bean
 	public Docket apiDocket() {
 		return new Docket(DocumentationType.SWAGGER_2)
-			.select()
-			.apis(RequestHandlerSelectors.any())
-			.paths(PathSelectors.any())
-			.build();
+				.select()
+				.apis(RequestHandlerSelectors.any())
+				.paths(PathSelectors.any())
+				.build();
 	}
 }
