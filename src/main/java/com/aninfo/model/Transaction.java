@@ -10,7 +10,6 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // El cbu será autogenerado y secuencial
     private Long id;
 
-    @ApiModelProperty(notes = "Tipo de transacción: DEPOSIT (Deposito) o WITHDRAW (Extracción)", allowableValues = "DEPOSIT, WITHDRAW")
     private String tipo;
 
     private Double monto;

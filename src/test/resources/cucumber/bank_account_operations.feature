@@ -22,4 +22,3 @@ Feature: Bank account operations
     When Trying to deposit -100
     Then Operation should be denied due to negative sum
     And Account balance should remain 200
-
