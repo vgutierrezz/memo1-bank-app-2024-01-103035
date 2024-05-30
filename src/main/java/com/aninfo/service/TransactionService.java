@@ -1,5 +1,8 @@
 package com.aninfo.service;
 
+import com.aninfo.model.Promo;
+import com.aninfo.repository.PromoRepository;
+import org.hibernate.TransactionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +22,11 @@ public class TransactionService {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private PromoRepository promoRepository;
+    @Autowired
+    private PromoService promoService;
 
     // createTransaction crea una nueva Transaction y la guarda en la base de datos,
     // devuelve latransacción creada
@@ -56,9 +64,22 @@ public class TransactionService {
             Double monto = transaction.getMonto();
             Long cbu = transaction.getAccountCbu();
 
-            // Se restaura el monto de la transacción a eliminar
+
             if ("DEPOSIT".equals(tipo)) {
-                accountService.withdraw(cbu, monto);
+                accountService.withdraw(cbu, monto);  // Se restaura el monto de la transacción a eliminar
+
+
+                Long idTransaction = transaction.getId();
+                Optional<Promo> optionalPromo = promoRepository.findByidTransaction(idTransaction);
+
+                if (optionalPromo.isPresent()) {   //si hay una promo asociada la elimina y extrae el valor
+                    Promo promoAsociada = optionalPromo.get();
+                    Double montoPromo = promoAsociada.getMonto();
+                    Long idPromo = promoAsociada.getId();
+                    accountService.withdraw(cbu, montoPromo);
+                    promoService.deleteById(idPromo);
+                }
+
             } else {
                 accountService.deposit(cbu, monto);
             }

@@ -3,6 +3,7 @@ package com.aninfo.service;
 import com.aninfo.exceptions.DepositNegativeSumException;
 import com.aninfo.exceptions.InsufficientFundsException;
 import com.aninfo.model.Account;
+import com.aninfo.model.Transaction;
 import com.aninfo.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class AccountService {
 
     @Autowired
     private TransactionService transaction;
+
+    @Autowired
+    private PromoService promo;
 
     public Account createAccount(Account account) {
         return accountRepository.save(account);
@@ -60,24 +64,32 @@ public class AccountService {
 
     @Transactional
     public Account deposit(Long cbu, Double sum) {
-        
         // Lógica de negocio: No permitir depósitos de montos nulos o negativos
         if (sum <= 0) {
             throw new DepositNegativeSumException("Cannot deposit negative sums");
         }
-        // Lógica de negocio: Aplicar promoción bancaria monto > $2000 -> +10% hasta $500
-        else if (sum>=2000 && sum<5000){
-            sum = sum * 1.10; //sumo el 10%
-        }else if (sum>=5000){
-            sum = sum + 500; //alcanzó el tope $500 
-        }
+        Transaction transactionActual = transaction.createTransaction(cbu, sum, "DEPOSIT"); //creo la transaccion con el monto final
+
         // 0<sum<2000 no aplica beneficio - queda igual
-        transaction.createTransaction(cbu, sum, "DEPOSIT"); //creo la transaccion con el monto final
+        Boolean aplicaPromo = false;
+        Double beneficio = 0.0;
+        // Lógica de negocio: Aplicar promoción bancaria monto > $2000 -> +10% hasta $500
+        if (sum>=2000 && sum<5000){
+            aplicaPromo = true;
+            beneficio = sum * 0.10; //sumo el 10%
+        }else if (sum>=5000){
+            aplicaPromo = true;
+            beneficio = 500.0; //alcanzó el tope $500
+        }
+
+        if (aplicaPromo) {
+            Long idTransaction = transactionActual.getId();
+            promo.createPromo(beneficio, idTransaction);
+        }
 
         Account account = accountRepository.findAccountByCbu(cbu);
-        account.setBalance(account.getBalance() + sum);
+        account.setBalance(account.getBalance() + sum + beneficio);
         accountRepository.save(account);
-
         return account;
     }
 
